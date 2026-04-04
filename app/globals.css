@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/**
+ * Design tokens — warm "reading room" palette, sharp geometry, stamp shadows.
+ * Avoids the default cool-gray + blue look common in AI-generated UIs.
+ */
+@theme {
+  /* Typography → next/font sets --font-* on <body>; these map to Tailwind font families */
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Surfaces & ink */
+  --color-paper: #e4dfd4;
+  --color-ink: #1a1714;
+  --color-ink-muted: #5c574f;
+  --color-accent: #b54a32;
+  --color-accent-hover: #943c28;
+  --color-surface: #f6f2ea;
+  --color-surface-2: #d9d3c7;
+  --color-border: #252119;
+  --color-moss: #2d4a3e;
+  --color-moss-hover: #1f342c;
+  --color-warn-paper: #f0e4c8;
+  --color-warn-ink: #6b5420;
+  --color-danger: #9b1c1c;
+  --color-danger-paper: #f5e0e0;
+
+  /* Offset box shadows (stamped / lifted panels) */
+  --shadow-stamp: 5px 5px 0 0 #1a1714;
+  --shadow-stamp-sm: 3px 3px 0 0 #1a1714;
+  --shadow-inset: inset 0 2px 0 rgb(255 255 255 / 0.35);
+
+  /* Body grid texture (referenced in @layer base) */
+  --manuscript-grid-line: rgb(26 23 20 / 0.06);
+}
+
+/* Reusable panel chrome — matches Query + Library stamped sections */
+@layer components {
+  .modal-scrim {
+    /* Warm brown tint (not flat black) + light blur */
+    background-color: rgb(42 36 30 / 0.48);
+    backdrop-filter: blur(5px);
+  }
+
+  .app-panel-stamp {
+    @apply border-[3px] border-border bg-surface p-6 sm:p-8 shadow-stamp;
+  }
+
+  .app-panel-stamp-sm {
+    @apply border-[3px] border-border bg-surface p-6 sm:p-8 shadow-stamp-sm;
+  }
+
+  .app-panel-provenance {
+    @apply border-[3px] border-border bg-paper p-6 sm:p-8;
+  }
+}
+
+/* Page background: subtle manuscript grid (texture, not a generic gradient) */
+@layer base {
+  body {
+    @apply min-h-screen text-ink;
+    background-color: var(--color-paper);
+    background-image: linear-gradient(
+        90deg,
+        var(--manuscript-grid-line) 1px,
+        transparent 1px
+      ),
+      linear-gradient(var(--manuscript-grid-line) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-attachment: fixed;
+  }
+
+  /* Browsers default to arrow on <button>; make clickable controls obvious */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  a[href] {
+    cursor: pointer;
+  }
+}
