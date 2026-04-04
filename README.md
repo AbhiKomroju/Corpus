@@ -1,5 +1,7 @@
 # Corpus — RAG over your documents
 
+**Repository:** [github.com/AbhiKomroju/Corpus](https://github.com/AbhiKomroju/Corpus) · clone URL `https://github.com/AbhiKomroju/Corpus.git`
+
 A **retrieval-augmented generation (RAG)** app: upload **PDF, DOCX, or TXT**, get files **chunked + embedded** into **Supabase (Postgres + pgvector)**, then ask questions in natural language. Answers use **Google Gemini** with retrieved chunks as context, plus **source citations**.
 
 The UI is intentionally **editorial** (custom typography and palette) rather than generic “AI SaaS” styling.
@@ -35,8 +37,8 @@ The UI is intentionally **editorial** (custom typography and palette) rather tha
 ### 1. Clone and install
 
 ```bash
-git clone <your-repo-url> rag-search-app
-cd rag-search-app
+git clone https://github.com/AbhiKomroju/Corpus.git
+cd Corpus
 npm install
 ```
 
@@ -97,6 +99,7 @@ Query  → embed question → match_documents (top-K) → prompt LLM with chunks
 
 ## Deploying
 
+- **Git remote:** [https://github.com/AbhiKomroju/Corpus](https://github.com/AbhiKomroju/Corpus) (`git clone https://github.com/AbhiKomroju/Corpus.git`). In Vercel, **Import** that repository, then set env vars.
 - **Do not** commit `.env` or `.env.local` (real keys). **Do** commit `.env.local.example` so others can bootstrap.
 - On **Vercel** (or similar), add the same variable **names** under **Environment Variables** for **Production** (and **Preview** if you want previews to work), then redeploy.
 - Names starting with `NEXT_PUBLIC_` are inlined into the **client** bundle at build time.
@@ -105,7 +108,7 @@ Query  → embed question → match_documents (top-K) → prompt LLM with chunks
 ## Project structure
 
 ```
-rag-search-app/
+Corpus/
 ├── app/
 │   ├── api/
 │   │   ├── upload/route.ts      # Storage upload, extract, chunk, embed, insert
@@ -133,6 +136,7 @@ rag-search-app/
 │   └── globals.css              # Tailwind v4 + design tokens
 ├── lib/
 │   ├── constants.ts             # RAG, models, upload cap, bucket name
+│   ├── site.ts                  # GitHub repo URL (footer + docs)
 │   ├── fetch-json.ts            # Safe client JSON parsing (HTML-safe)
 │   ├── json-error-response.ts   # Shared `{ error }` API responses
 │   ├── gemini-embed.ts          # Embedding request payload helper
