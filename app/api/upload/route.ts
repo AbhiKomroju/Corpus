@@ -13,14 +13,20 @@ import {
 } from '@/lib/constants';
 import { geminiEmbedContentPayload } from '@/lib/gemini-embed';
 
+/**
+ * Returns Supabase + Gemini clients for upload operations.
+ * Both DB and Storage clients use the service-role key so they bypass RLS —
+ * all mutations are server-side only; the public anon key is read-only.
+ */
 function getClients() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const privilegedKey = serviceKey || anonKey;
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   return {
-    supabaseStorage: createClient(url, serviceKey || anonKey),
-    supabase: createClient(url, anonKey),
+    supabaseStorage: createClient(url, privilegedKey),
+    supabase: createClient(url, privilegedKey),
     embeddingModel: genAI.getGenerativeModel({ model: GEMINI_EMBEDDING_MODEL }),
   };
 }

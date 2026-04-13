@@ -45,7 +45,7 @@ npm install
 ### 2. Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor** and run the full script in **`supabase-setup.sql`** (enables `vector`, creates the `documents` table, HNSW index, and `match_documents`).
+2. Open **SQL Editor** and run the full script in **`supabase-setup.sql`** (enables `vector`, creates the `documents` table, HNSW index, RLS policies, and `match_documents`).
 3. Open **Storage** → create a bucket named **`documents`** (same name as in code). Configure policies for your security model; the API uses the **service role** for server-side uploads and reads when needed.
 4. Under **Project Settings → API**, copy **Project URL**, **anon** key, and **service_role** key (server-only).
 
@@ -61,8 +61,8 @@ cp .env.local.example .env.local
 | Variable | Where it runs | Notes |
 | -------- | ------------- | ----- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser + server | Public project URL. |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Browser + server | Supabase **anon** key; RLS applies to client-facing access. |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Server only** | Used in API routes for Storage and privileged operations. **Do not** use the `NEXT_PUBLIC_` prefix. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Browser + server | Supabase **anon** key; RLS restricts it to **read-only** on the `documents` table. |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server only** | **Required.** Used by all API routes for DB writes, deletes, and Storage. Bypasses RLS. **Do not** use the `NEXT_PUBLIC_` prefix. |
 | `GEMINI_API_KEY` | **Server only** | Used in `/api/upload` and `/api/search`. **Never** expose to the client. |
 
 Forks/clones: use the same variable **names** in hosting dashboards (e.g. Vercel) as in `.env.local.example`.
@@ -144,8 +144,8 @@ Corpus/
 │   ├── rag-client-types.ts      # Client types for search API
 │   ├── format-display.ts        # Size / date formatting
 │   └── format-file-type.ts      # MIME → short labels
-├── supabase-setup.sql
-├── .env.local.example           # Template — copy to .env.local
+├── supabase-setup.sql             # Full schema + RLS
+├── .env.local.example             # Template — copy to .env.local
 ├── next.config.ts               # e.g. turbopack.root for correct workspace resolution
 ├── postcss.config.mjs
 └── README.md
@@ -160,6 +160,22 @@ Corpus/
 | `npm start`     | Production server      |
 | `npm run lint`  | ESLint (Next.js config) |
 
+## Security — Row Level Security (RLS)
+
+The `documents` table has **RLS enabled** with the following policy model:
+
+| Role | SELECT | INSERT | UPDATE | DELETE |
+| ---- | ------ | ------ | ------ | ------ |
+| `anon` (public key) | **Yes** | No | No | No |
+| `authenticated` | **Yes** | **Yes** | **Yes** | **Yes** |
+| `service_role` | Bypasses RLS entirely | | | |
+
+**Why this matters:**
+
+- The **anon key** is prefixed `NEXT_PUBLIC_` and ships in the client bundle. With RLS, even if someone extracts it, they can only *read* documents — not insert, modify, or delete.
+- All mutations (upload, delete) happen through **API routes** on the server, which use the **service role key** to bypass RLS.
+- The `authenticated` policies are forward-compatible for when user auth is added later.
+
 ## Limits & tuning
 
 - **Upload size:** **5 MB** per file (enforced in `POST /api/upload` and the upload modal; see `MAX_UPLOAD_BYTES` in `lib/constants.ts`).
@@ -167,6 +183,6 @@ Corpus/
 
 ## Troubleshooting
 
-- **Upload fails with storage / RLS errors:** set `SUPABASE_SERVICE_ROLE_KEY` in the server environment and ensure the **`documents`** bucket exists.
+- **Upload or delete fails with RLS / permission errors:** `SUPABASE_SERVICE_ROLE_KEY` is **required** now that RLS is enabled. Set it in the server environment and ensure the **`documents`** bucket exists.
 - **Search returns DB errors:** confirm `supabase-setup.sql` ran successfully and the vector dimension is **768** everywhere.
 - **Turbopack “wrong workspace root”:** this repo sets `turbopack.root` in `next.config.ts` to the project directory when multiple lockfiles confuse Next.js.

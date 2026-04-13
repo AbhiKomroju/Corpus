@@ -26,8 +26,58 @@ CREATE TABLE documents (
 -- Using hnsw instead of ivfflat because ivfflat has a 2000-dim limit
 CREATE INDEX ON documents USING hnsw (embedding vector_cosine_ops);
 
--- 4. Create the match_documents function used by the /api/search route
+-- 4. Enable Row Level Security (RLS)
+-- With RLS enabled, the anon key (public / client-facing) can only SELECT.
+-- All inserts, updates, and deletes go through API routes using the
+-- service_role key, which bypasses RLS entirely.
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+
+-- 4a. Allow the anon role to read all documents (needed for library listing
+--     and as a safety net — server routes use service_role anyway).
+CREATE POLICY "anon_select_documents"
+  ON documents
+  FOR SELECT
+  TO anon
+  USING (true);
+
+-- 4b. Allow the authenticated role to read all documents
+--     (forward-compatible for when user auth is added).
+CREATE POLICY "authenticated_select_documents"
+  ON documents
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- 4c. Allow the authenticated role full write access
+--     (future-proofing: logged-in users can insert/update/delete).
+CREATE POLICY "authenticated_insert_documents"
+  ON documents
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "authenticated_update_documents"
+  ON documents
+  FOR UPDATE
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "authenticated_delete_documents"
+  ON documents
+  FOR DELETE
+  TO authenticated
+  USING (true);
+
+-- NOTE: The anon role has NO insert/update/delete policies.
+-- The service_role key (used by API routes) bypasses RLS, so server
+-- mutations work without issue. This prevents direct client-side
+-- writes through the publicly-exposed anon key.
+
+-- 5. Create the match_documents function used by the /api/search route
 -- This performs cosine similarity search and returns the top matches
+-- SECURITY INVOKER (default): runs with the caller's privileges, so
+-- anon callers are still subject to the SELECT policy above.
 CREATE OR REPLACE FUNCTION match_documents(
   query_embedding vector(768),
   match_threshold float,

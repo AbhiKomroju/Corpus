@@ -26,12 +26,17 @@ type ContentRow = {
   metadata?: DocumentMetadata | null;
 };
 
+/**
+ * Returns Supabase clients for document operations.
+ * Both use the service-role key to bypass RLS — all reads/deletes are
+ * server-side; the public anon key is restricted to SELECT by RLS policies.
+ */
 function getClients() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
   return {
-    supabase: createClient(url, anonKey),
+    supabase: createClient(url, serviceKey),
     supabaseStorage: createClient(url, serviceKey),
   };
 }

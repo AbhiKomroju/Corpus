@@ -18,13 +18,18 @@ type MatchDocumentRow = {
   similarity: number;
 };
 
+/**
+ * Returns Supabase + Gemini clients for search operations.
+ * Uses the service-role key to bypass RLS for the match_documents RPC;
+ * falls back to anon if service key is not configured.
+ */
 function getClients() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   return {
-    supabase: createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
-    ),
+    supabase: createClient(url, serviceKey || anonKey),
     embeddingModel: genAI.getGenerativeModel({ model: GEMINI_EMBEDDING_MODEL }),
     chatModel: genAI.getGenerativeModel({ model: GEMINI_CHAT_MODEL }),
   };
